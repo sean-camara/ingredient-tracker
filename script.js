@@ -5,7 +5,10 @@
    - modal that doesn't overlap bottom nav
 */
 
-// DOM elements
+console.log('script.js loaded');
+
+
+// ---- DOM elements ----
 const ingredientsList = document.getElementById('ingredientsList');
 const searchInput = document.getElementById('search');
 const filterBought = document.getElementById('filterBought');
@@ -28,12 +31,12 @@ const navFilter = document.getElementById('navFilter');
 const navSettings = document.getElementById('navSettings');
 const navHome = document.getElementById('navHome');
 
-// data
+// ---- data ----
 const STORAGE_KEY = 'ingredientsDataV1';
 let ingredients = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
 let editingIndex = null;
 
-// helpers: quantity parse/build
+// ---- helpers: quantity parse/build ----
 function parseQuantity(q){
   if(!q) return {num: NaN, unit: ''};
   const m = q.trim().match(/^(\d+(\.\d+)?)(.*)$/);
@@ -112,7 +115,6 @@ function renderIngredients(){
     checkbox.className = 'bought-checkbox';
     checkbox.checked = !!ing.bought;
     checkbox.addEventListener('change', () => {
-      // find actual index in main array
       const realIndex = ingredients.findIndex(it => it === ing);
       if(realIndex >= 0){
         ingredients[realIndex].bought = checkbox.checked;
@@ -166,7 +168,6 @@ function renderIngredients(){
     delBtn.title = 'Delete';
     delBtn.addEventListener('click', () => {
       if(confirm(`Delete "${ing.name}"?`)){
-        // remove first matching instance (should be the same object)
         const realIndex = ingredients.findIndex(it => it === ing);
         if(realIndex >= 0) ingredients.splice(realIndex, 1);
         saveIngredients(); renderIngredients();
@@ -231,7 +232,6 @@ ingredientForm.addEventListener('submit', e => {
 
   const newIng = { name, category, expiration, quantity, notes, imageDataUrl, bought: false };
   if(editingIndex !== null){
-    // update (edit not fully implemented UI-wise here)
     ingredients[editingIndex] = {...ingredients[editingIndex], ...newIng};
     editingIndex = null;
     saveIngredients(); renderIngredients(); closeAdd();
@@ -292,7 +292,7 @@ settingsModalBg.addEventListener('click', e => { if(e.target === settingsModalBg
 // service worker registration
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('./service-worker.js').catch((err)=>{ console.warn('SW registration failed', err); });
   });
 }
 
@@ -305,29 +305,39 @@ if ('Notification' in window) {
   }
 }
 
-// Notify near expiration ingredients
-function notifyNearExpiration() {
-  if (!('Notification' in window) || Notification.permission !== 'granted') {
-    return; // no permission
-  }
-
+// ---- Notifications: robust expiration check ----
+// treat input date (YYYY-MM-DD) as local end of that day
+function daysUntil(expirationDateString){
+  if (!expirationDateString) return Infinity;
   const now = new Date();
-  const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
+  const endOfDay = new Date(expirationDateString + 'T23:59:59');
+  const diffMs = endOfDay - now;
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
+function notifyNearExpiration() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const warnDays = 3; // notify for items expiring in <= warnDays
 
   ingredients.forEach(ing => {
     if (!ing.expiration) return;
 
-    const expDate = new Date(ing.expiration);
-    if (expDate >= now && expDate <= threeDaysLater) {
+    const days = daysUntil(ing.expiration);
+    if (days >= 0 && days <= warnDays) {
       navigator.serviceWorker.getRegistration().then(registration => {
         if (registration) {
+          // encode tag to avoid duplicates & invalid chars
+          const tag = `exp-${encodeURIComponent(ing.name)}-${ing.expiration}`;
           registration.showNotification('Ingredient Expiring Soon!', {
-            body: `${ing.name} (${ing.category}) expires on ${ing.expiration}`,
+            body: `${ing.name} expires in ${days} day(s) (${ing.expiration}).`,
             icon: 'icons/icon-192.png',
-            tag: `exp-${ing.name}-${ing.expiration}`,
+            tag,
             renotify: true
           });
         }
+      }).catch(err => {
+        console.warn('No SW registration for notification', err);
       });
     }
   });
@@ -336,7 +346,10 @@ function notifyNearExpiration() {
 // initial render & notify on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   renderIngredients();
+  // run notifications on load
   notifyNearExpiration();
+  // optional: re-check every 6 hours while app is open
+  setInterval(notifyNearExpiration, 6 * 60 * 60 * 1000);
 });
 
 // Navbar hide/show on scroll
@@ -354,3 +367,19 @@ window.addEventListener('scroll', () => {
 
   lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
 });
+
+// single global testNotification function (call from console)
+window.testNotification = function() {
+  if ('Notification' in window && Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(registration => {
+      registration.showNotification('Test Notification', {
+        body: 'This is a test to confirm notifications work!',
+        icon: './icons/icon-192.png',
+        vibrate: [100, 50, 100],
+        tag: 'test-notification'
+      });
+    });
+  } else {
+    console.log("Notifications not supported or permission not granted yet.");
+  }
+};
