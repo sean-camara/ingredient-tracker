@@ -1,213 +1,216 @@
-// Elements
-const ingredientsList = document.getElementById("ingredientsList");
-const searchInput = document.getElementById("search");
-const modalBg = document.getElementById("modal-bg");
-const ingredientForm = document.getElementById("ingredientForm");
-const navAdd = document.getElementById("navAdd");
-const navHome = document.getElementById("navHome");
-const navFilter = document.getElementById("navFilter");
+/* main script for ingredients PWA
+   - image upload (base64)
+   - merge duplicates (name+category), sum numeric quantities
+   - card layout with checkbox on left, image middle-left, content center, trash right
+   - modal that doesn't overlap bottom nav
+*/
 
-const imageFile = document.getElementById("imageFile");
-const imagePreview = document.getElementById("imagePreview");
-const cancelBtn = document.getElementById("cancelBtn");
+// DOM elements
+const ingredientsList = document.getElementById('ingredientsList');
+const searchInput = document.getElementById('search');
+const filterBought = document.getElementById('filterBought');
+const filterCategory = document.getElementById('filterCategory');
+const resetFiltersBtn = document.getElementById('resetFilters');
 
-// Data
-let ingredients = JSON.parse(localStorage.getItem("ingredients")) || [];
-let editingIndex = null; // not used for now, but kept for future edit feature
+const modalBg = document.getElementById('modal-bg');
+const ingredientForm = document.getElementById('ingredientForm');
+const imageFile = document.getElementById('imageFile');
+const imagePreview = document.getElementById('imagePreview');
+const cancelBtn = document.getElementById('cancelBtn');
 
-// Helpers for quantity parsing & building
+const settingsModalBg = document.getElementById('settings-modal-bg');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const resetFiltersSettingsBtn = document.getElementById('resetFiltersSettingsBtn');
+const settingsCancelBtn = document.getElementById('settingsCancelBtn');
+
+const navAdd = document.getElementById('navAdd');
+const navFilter = document.getElementById('navFilter');
+const navSettings = document.getElementById('navSettings');
+const navHome = document.getElementById('navHome');
+
+// data
+const STORAGE_KEY = 'ingredientsDataV1';
+let ingredients = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let editingIndex = null;
+
+// helpers: quantity parse/build
 function parseQuantity(q){
-  if(!q) return {num:0, unit:''};
+  if(!q) return {num: NaN, unit: ''};
   const m = q.trim().match(/^(\d+(\.\d+)?)(.*)$/);
   if(m) return {num: parseFloat(m[1]), unit: m[3].trim()};
   return {num: NaN, unit: q.trim()};
 }
 function buildQuantity(num, unit){
   if(isNaN(num)) return unit || '';
-  if(!unit) return String(num);
-  return `${num} ${unit}`.trim();
+  return unit ? `${num} ${unit}` : `${num}`;
 }
 
-// Save
-function saveIngredients(){
-  localStorage.setItem("ingredients", JSON.stringify(ingredients));
-}
+// save & load
+function saveIngredients(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(ingredients)); }
 
-// Merge duplicates by name (case-insensitive) + same category; sum numeric quantities
+// merge logic (name lower + category exact)
 function addOrMergeIngredient(newIng){
-  const nameKey = newIng.name.trim().toLowerCase();
+  const key = newIng.name.trim().toLowerCase();
   const cat = newIng.category;
-  const idx = ingredients.findIndex(it => it.name.trim().toLowerCase() === nameKey && it.category === cat);
+  const idx = ingredients.findIndex(it => it.name.trim().toLowerCase() === key && it.category === cat);
   if(idx === -1){
     ingredients.push(newIng);
   } else {
-    const exist = ingredients[idx];
-    const p1 = parseQuantity(exist.quantity);
-    const p2 = parseQuantity(newIng.quantity);
-
+    const ex = ingredients[idx];
+    const p1 = parseQuantity(ex.quantity || '');
+    const p2 = parseQuantity(newIng.quantity || '');
     let mergedQty;
-    if(!isNaN(p1.num) && !isNaN(p2.num)) {
+    if(!isNaN(p1.num) && !isNaN(p2.num)){
       const sum = p1.num + p2.num;
       const unit = p1.unit || p2.unit;
       mergedQty = buildQuantity(sum, unit);
     } else {
-      // fallback: join
-      mergedQty = exist.quantity + ' + ' + newIng.quantity;
+      mergedQty = ex.quantity + ' + ' + newIng.quantity;
     }
-
-    // keep earliest expiration if present
-    const expA = exist.expiration || '';
-    const expB = newIng.expiration || '';
-    const earliest = (!expA) ? expB : (!expB ? expA : (new Date(expA) <= new Date(expB) ? expA : expB));
-
-    // merge notes
-    const notes = [exist.notes, newIng.notes].filter(Boolean).join(' ∘ ');
-
-    // image: prefer existing, else new
-    const imageDataUrl = exist.imageDataUrl || newIng.imageDataUrl || '';
-
-    ingredients[idx] = {
-      ...exist,
-      quantity: mergedQty,
-      expiration: earliest,
-      notes,
-      imageDataUrl,
-      bought: exist.bought || newIng.bought || false
-    };
+    // earliest expiration
+    const exp = (!ex.expiration) ? newIng.expiration : (!newIng.expiration ? ex.expiration : (new Date(ex.expiration) <= new Date(newIng.expiration) ? ex.expiration : newIng.expiration));
+    // notes combine
+    const notes = [ex.notes, newIng.notes].filter(Boolean).join(' ∘ ');
+    // prefer existing image
+    const imageDataUrl = ex.imageDataUrl || newIng.imageDataUrl || '';
+    const bought = ex.bought || newIng.bought || false;
+    ingredients[idx] = {...ex, quantity: mergedQty, expiration: exp, notes, imageDataUrl, bought};
   }
   saveIngredients();
 }
 
-// Render
-function renderIngredients(filterText = ""){
-  ingredientsList.innerHTML = "";
+// escape helper
+function escapeHtml(s){ if(!s) return ''; return s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;'); }
 
-  const q = (filterText || searchInput.value || "").toLowerCase();
+// render function using the 4-col grid per card
+function renderIngredients(){
+  ingredientsList.innerHTML = '';
+  const q = (searchInput.value || '').trim().toLowerCase();
+  const boughtFilterVal = filterBought ? filterBought.value : 'all';
+  const catFilterVal = filterCategory ? filterCategory.value : 'all';
 
-  ingredients.forEach((ing, i) => {
-    if(q && !ing.name.toLowerCase().includes(q)) return;
+  const visible = ingredients.filter(ing => {
+    if(q && !ing.name.toLowerCase().includes(q)) return false;
+    if(boughtFilterVal === 'bought' && !ing.bought) return false;
+    if(boughtFilterVal === 'notBought' && ing.bought) return false;
+    if(catFilterVal !== 'all' && ing.category !== catFilterVal) return false;
+    return true;
+  });
 
-    const li = document.createElement("li");
-    li.className = "ingredient-item";
+  visible.forEach((ing, i) => {
+    const li = document.createElement('li');
+    li.className = 'ingredient-item';
 
-    // left side: checkbox + image (if)
-    const left = document.createElement("div");
-    left.style.display = "flex";
-    left.style.flexDirection = "column";
-    left.style.alignItems = "center";
-    left.style.gap = "8px";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "bought-checkbox";
+    // checkbox cell
+    const checkboxCell = document.createElement('div');
+    checkboxCell.className = 'checkbox-cell';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'bought-checkbox';
     checkbox.checked = !!ing.bought;
-    checkbox.addEventListener("change", () => {
-      ing.bought = checkbox.checked;
-      saveIngredients();
-      renderIngredients(q);
+    checkbox.addEventListener('change', () => {
+      // find actual index in main array
+      const realIndex = ingredients.findIndex(it => it === ing);
+      if(realIndex >= 0){
+        ingredients[realIndex].bought = checkbox.checked;
+        saveIngredients(); renderIngredients();
+      }
     });
-    left.appendChild(checkbox);
+    checkboxCell.appendChild(checkbox);
 
+    // image cell
+    const imageCell = document.createElement('div');
+    imageCell.className = 'image-cell';
     if(ing.imageDataUrl){
-      const img = document.createElement("img");
+      const img = document.createElement('img');
+      img.className = 'ingredient-img';
       img.src = ing.imageDataUrl;
       img.alt = ing.name;
-      img.style.width = "56px";
-      img.style.height = "56px";
-      img.style.objectFit = "cover";
-      img.style.borderRadius = "10px";
-      left.appendChild(img);
+      imageCell.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'thumb-placeholder';
+      ph.textContent = (ing.name || '').slice(0,2).toUpperCase();
+      imageCell.appendChild(ph);
     }
 
     // content
-    const details = document.createElement("div");
-    details.className = "details";
-    details.style.marginLeft = "12px";
-    details.innerHTML = `
-      <p><strong>${escapeHtml(ing.name)}</strong> (${escapeHtml(ing.category)})</p>
-      <p>Quantity: ${escapeHtml(ing.quantity)}</p>
-      ${ing.expiration ? `<p style="margin:4px 0; font-size:0.9rem; color:#7a6aa6">Expires: ${escapeHtml(ing.expiration)}</p>` : ''}
-      ${ing.notes ? `<p class="item-notes" style="margin-top:6px; color:#8f78b6">${escapeHtml(ing.notes)}</p>` : ''}
-    `;
+    const title = document.createElement('div');
+    title.className = 'title';
+    title.textContent = `${ing.name} (${ing.category || '—'})`;
+
+    const quantity = document.createElement('div');
+    quantity.className = 'quantity';
+    quantity.textContent = `Quantity: ${ing.quantity || '—'}`;
+
+    const notes = document.createElement('div');
+    notes.className = 'notes';
+    notes.textContent = ing.notes || '';
 
     // actions
-    const actions = document.createElement("div");
-    actions.className = "actions";
-
-    // delete (trash emoji only)
-    const delBtn = document.createElement("button");
-    delBtn.className = "delete-btn";
-    delBtn.innerHTML = "🗑️";
-    delBtn.title = "Delete";
-    delBtn.addEventListener("click", () => {
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const delBtn = document.createElement('button');
+    delBtn.className = 'delete-btn';
+    delBtn.innerHTML = '🗑️';
+    delBtn.title = 'Delete';
+    delBtn.addEventListener('click', () => {
       if(confirm(`Delete "${ing.name}"?`)){
-        ingredients.splice(i,1);
-        saveIngredients();
-        renderIngredients(q);
+        // remove first matching instance (should be the same object)
+        const realIndex = ingredients.findIndex(it => it === ing);
+        if(realIndex >= 0) ingredients.splice(realIndex, 1);
+        saveIngredients(); renderIngredients();
       }
     });
-
     actions.appendChild(delBtn);
 
-    // assemble li: left + details + actions
-    // create a container for left+details so layout is correct
-    const center = document.createElement("div");
-    center.style.display = "flex";
-    center.style.flex = "1";
-    center.style.alignItems = "center";
-
-    center.appendChild(left);
-    center.appendChild(details);
-
-    li.appendChild(center);
+    // assemble
+    li.appendChild(checkboxCell);
+    li.appendChild(imageCell);
+    li.appendChild(title);
+    li.appendChild(quantity);
+    li.appendChild(notes);
     li.appendChild(actions);
 
     ingredientsList.appendChild(li);
   });
 
-  if([...ingredients].filter(ing => (q ? ing.name.toLowerCase().includes(q) : true)).length === 0){
-    ingredientsList.innerHTML = `<p style="text-align:center; margin-top:1rem; color:#8f78b6">No ingredients found.</p>`;
+  if(visible.length === 0){
+    ingredientsList.innerHTML = `<div class="empty-note">No ingredients found.</div>`;
   }
 }
 
-// simple helper to avoid HTML injection
-function escapeHtml(str){
-  if(!str) return '';
-  return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
-}
-
-// Open / close modal
-navAdd.addEventListener("click", openModal);
-function openModal(){
+// modal controls
+function openAdd(){
   editingIndex = null;
   ingredientForm.reset();
   imagePreview.style.display = 'none';
   imagePreview.src = '';
-  modalBg.classList.remove("hidden");
+  modalBg.classList.add('active');
+  document.getElementById('modalTitle').textContent = 'Add Ingredient 🍳';
 }
-cancelBtn.addEventListener("click", ()=> modalBg.classList.add("hidden"));
-modalBg.addEventListener("click", (e) => { if(e.target === modalBg) modalBg.classList.add("hidden"); });
+function closeAdd(){ modalBg.classList.remove('active'); }
 
-// Image file -> preview (base64)
-imageFile.addEventListener("change", (e) => {
+// image upload handling
+imageFile.addEventListener('change', e => {
   const f = e.target.files && e.target.files[0];
-  if(!f){ imagePreview.style.display='none'; imagePreview.src=''; return; }
+  if(!f){ imagePreview.style.display = 'none'; imagePreview.src = ''; return; }
   const reader = new FileReader();
-  reader.onload = function(ev){
+  reader.onload = ev => {
     imagePreview.src = ev.target.result;
     imagePreview.style.display = 'block';
   };
   reader.readAsDataURL(f);
 });
 
-// Submit form
-ingredientForm.addEventListener("submit", (e) => {
+// submit form
+ingredientForm.addEventListener('submit', e => {
   e.preventDefault();
   const name = ingredientForm.name.value.trim();
   const category = ingredientForm.category.value;
+  const expiration = ingredientForm.expiration.value || '';
   const quantity = ingredientForm.quantity.value.trim();
-  const expiration = ingredientForm.expiration ? ingredientForm.expiration.value : '';
-  const notes = ingredientForm.notes ? ingredientForm.notes.value.trim() : '';
+  const notes = ingredientForm.notes.value.trim();
   const imageDataUrl = imagePreview.src && imagePreview.style.display !== 'none' ? imagePreview.src : '';
 
   if(!name || !category || !quantity){
@@ -215,24 +218,53 @@ ingredientForm.addEventListener("submit", (e) => {
     return;
   }
 
-  const newIng = {
-    name, category, quantity, expiration, notes, imageDataUrl, bought: false
-  };
+  const newIng = { name, category, expiration, quantity, notes, imageDataUrl, bought: false };
+  if(editingIndex !== null){
+    // update (edit not fully implemented UI-wise here)
+    ingredients[editingIndex] = {...ingredients[editingIndex], ...newIng};
+    editingIndex = null;
+    saveIngredients(); renderIngredients(); closeAdd();
+    return;
+  }
 
   addOrMergeIngredient(newIng);
   renderIngredients();
-  modalBg.classList.add("hidden");
+  closeAdd();
 });
 
-// search event
-searchInput.addEventListener("input", ()=> renderIngredients());
+// UI wiring
+navAdd.addEventListener('click', openAdd);
+cancelBtn.addEventListener('click', closeAdd);
+modalBg.addEventListener('click', e => { if(e.target === modalBg) closeAdd(); });
 
-// initial render
-renderIngredients();
+// filters/search events
+searchInput.addEventListener('input', renderIngredients);
+if(filterBought) filterBought.addEventListener('change', renderIngredients);
+if(filterCategory) filterCategory.addEventListener('change', renderIngredients);
+if(resetFiltersBtn) resetFiltersBtn.addEventListener('click', () => { if(filterBought) filterBought.value='all'; if(filterCategory) filterCategory.value='all'; searchInput.value=''; renderIngredients(); });
 
-// register service worker (if you used service-worker.js)
+// nav interactions
+navFilter.addEventListener('click', () => {
+  const fp = document.getElementById('filtersPanel');
+  fp.classList.toggle('active');
+  if(fp.classList.contains('active')){
+    if(filterBought) filterBought.focus();
+  } else searchInput.focus();
+});
+navSettings.addEventListener('click', () => { settingsModalBg.classList.add('active'); });
+settingsCancelBtn.addEventListener('click', () => { settingsModalBg.classList.remove('active'); });
+clearAllBtn.addEventListener('click', ()=> { if(confirm('Delete ALL ingredients?')){ ingredients = []; saveIngredients(); renderIngredients(); settingsModalBg.classList.remove('active'); }});
+resetFiltersSettingsBtn.addEventListener('click', ()=> { if(filterBought) filterBought.value='all'; if(filterCategory) filterCategory.value='all'; searchInput.value=''; renderIngredients(); alert('Filters reset'); settingsModalBg.classList.remove('active'); });
+
+// close settings by clicking backdrop
+settingsModalBg.addEventListener('click', e => { if(e.target === settingsModalBg) settingsModalBg.classList.remove('active'); });
+
+// service worker registration
 if('serviceWorker' in navigator){
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js').catch(()=>{});
   });
 }
+
+// initial
+renderIngredients();

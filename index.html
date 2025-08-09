@@ -1,70 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>🍓 Ingredients Tracker</title>
-<link rel="stylesheet" href="styles.css" />
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#f5e6ff" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ingredients</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#f5e6ff" />
 </head>
 <body>
 
-<input id="search" type="search" placeholder="🔍 Search ingredients..." aria-label="Search ingredients" />
+  <!-- SEARCH -->
+  <input id="search" type="search" placeholder="🔍 Search ingredients..." aria-label="Search ingredients" />
 
-<ul id="ingredientsList" aria-live="polite" aria-label="Ingredients list">
-  <!-- Ingredients will show here -->
-</ul>
+  <!-- FILTERS (optional, small) -->
+  <div id="filtersPanel" class="filters">
+    <select id="filterBought" aria-label="Filter by bought">
+      <option value="all">All 🛒</option>
+      <option value="notBought">Not Bought ❌</option>
+      <option value="bought">Bought ✅</option>
+    </select>
 
-<!-- Modal for Add Ingredient (replace your existing modal) -->
-<div id="modal-bg" role="dialog" aria-modal="true" aria-labelledby="modalTitle" class="hidden">
-  <div id="modal">
-    <h2 id="modalTitle">Add Ingredient 🍳</h2>
-    <form id="ingredientForm">
-      <label for="name">Name *</label>
-      <input type="text" id="name" name="name" required autocomplete="off" placeholder="e.g., Tomatoes 🍅" />
-      
-      <label for="category">Category *</label>
-      <select id="category" name="category" required>
-        <option value="" disabled selected>Select category</option>
-        <option>Vegetables 🥦</option>
-        <option>Fruits 🍎</option>
-        <option>Dairy 🥛</option>
-        <option>Meat 🍗</option>
-        <option>Spices 🌿</option>
-        <option>Grains 🌾</option>
-        <option>Others 🍽️</option>
-      </select>
-      
-      <label for="quantity">Quantity *</label>
-      <input type="text" id="quantity" name="quantity" placeholder="e.g., 5 pcs" required autocomplete="off" />
-      
-      <!-- Image upload: hidden file input + styled label button -->
-      <label for="imageFile" class="file-label">📷 Upload Image</label>
-      <input type="file" id="imageFile" name="imageFile" accept="image/*" style="display:none;" />
-      <img id="imagePreview" alt="Image Preview" style="display:none; margin-top:10px; border-radius:12px; max-width:100%; max-height:140px;" />
-      
-      <div class="modal-buttons">
-        <button type="submit" class="save-btn">Save 💾</button>
-        <button type="button" class="cancel-btn" id="cancelBtn">Cancel ❌</button>
-      </div>
-    </form>
+    <select id="filterCategory" aria-label="Filter by category">
+      <option value="all">All categories 🥕</option>
+      <option>Vegetables 🥦</option>
+      <option>Fruits 🍎</option>
+      <option>Dairy 🥛</option>
+      <option>Meat 🍗</option>
+      <option>Spices 🌿</option>
+      <option>Grains 🌾</option>
+      <option>Others 🍽️</option>
+    </select>
+
+    <button id="resetFilters" class="reset">Reset ♻️</button>
   </div>
-</div>
 
+  <!-- LIST -->
+  <ul id="ingredientsList" aria-live="polite" aria-label="Ingredients list"></ul>
 
-<nav id="bottomNav" aria-label="Main navigation">
-  <button id="navHome" class="active" aria-label="Home">
-    🏠 <span class="label">Home</span>
-  </button>
-  <button id="navAdd" aria-label="Add Ingredient">
-    ➕ <span class="label">Add</span>
-  </button>
-  <button id="navFilter" aria-label="Filter Ingredients">
-    🔍 <span class="label">Filter</span>
-  </button>
-</nav>
+  <!-- ADD / EDIT MODAL -->
+  <div id="modal-bg" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div id="modal" class="modal">
+      <h2 id="modalTitle">Add Ingredient 🍳</h2>
+      <form id="ingredientForm">
+        <label for="name">Name *</label>
+        <input id="name" name="name" type="text" autocomplete="off" placeholder="Tomatoes 🍅" required />
 
-<script src="script.js"></script>
+        <label for="category">Category *</label>
+        <select id="category" name="category" required>
+          <option value="" disabled selected>Select category</option>
+          <option>Vegetables 🥦</option>
+          <option>Fruits 🍎</option>
+          <option>Dairy 🥛</option>
+          <option>Meat 🍗</option>
+          <option>Spices 🌿</option>
+          <option>Grains 🌾</option>
+          <option>Others 🍽️</option>
+        </select>
+
+        <label for="expiration">Expiration</label>
+        <input id="expiration" name="expiration" type="date" />
+
+        <label for="quantity">Quantity *</label>
+        <input id="quantity" name="quantity" type="text" placeholder="5 pcs" required />
+
+        <label for="notes">Notes</label>
+        <textarea id="notes" name="notes" placeholder="Optional notes..."></textarea>
+
+        <label for="imageFile" class="file-label">📷 Upload Image</label>
+        <input id="imageFile" name="imageFile" type="file" accept="image/*" style="display:none" />
+        <img id="imagePreview" alt="Image preview" style="display:none; border-radius:12px; width:100%; max-height:160px; object-fit:contain; margin-top:8px" />
+
+        <div class="modal-buttons">
+          <button type="submit" class="save-btn">Save 💾</button>
+          <button type="button" class="cancel-btn" id="cancelBtn">Cancel ❌</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SETTINGS modal (simple) -->
+  <div id="settings-modal-bg" class="modal-bg" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal">
+      <h2 id="settingsTitle">Settings ⚙️</h2>
+      <div class="modal-buttons">
+        <button id="clearAllBtn" class="clear-btn">Clear All</button>
+        <button id="resetFiltersSettingsBtn" class="reset">Reset Filters</button>
+        <button id="settingsCancelBtn" class="cancel-btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav id="bottomNav" aria-label="Main navigation">
+    <button id="navHome" class="active">🏠<span class="label">Home</span></button>
+    <button id="navAdd">➕<span class="label">Add</span></button>
+    <button id="navFilter">🔍<span class="label">Filter</span></button>
+    <button id="navSettings">⚙️<span class="label">Settings</span></button>
+  </nav>
+
+  <script src="script.js"></script>
 </body>
 </html>
