@@ -97,7 +97,19 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
 /* content */
 .title{ grid-column:3; grid-row:1; font-weight:800; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
 .quantity{ grid-column:3; grid-row:2; color:var(--muted); font-size:.95rem; }
-.notes{ grid-column:3; grid-row:3; color:#7f6fb2; font-size:.9rem; }
+.notes {
+  grid-column: 3;
+  grid-row: 3;
+  color: #7f6fb2;
+  font-size: 0.9rem;
+
+  white-space: normal !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  hyphens: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
 
 /* actions cell */
 .actions{ grid-column:4; grid-row:1 / span 3; display:flex; align-items:center; justify-content:center; }
