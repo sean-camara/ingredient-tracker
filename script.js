@@ -300,3 +300,22 @@ if('serviceWorker' in navigator){
 document.addEventListener('DOMContentLoaded', () => {
   renderIngredients();
 });
+
+// Navbar hide/show on scroll
+let lastScrollTop = 0;
+const bottomNav = document.getElementById('bottomNav');
+
+window.addEventListener('scroll', () => {
+  const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+
+  if (currentScroll > lastScrollTop) {
+    // User is scrolling down — hide navbar
+    bottomNav.classList.add('hide');
+  } else {
+    // User is scrolling up — show navbar
+    bottomNav.classList.remove('hide');
+  }
+
+  lastScrollTop = currentScroll <= 0 ? 0 : currentScroll; // Reset to 0 if negative scroll
+});
+

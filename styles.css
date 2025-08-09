@@ -291,3 +291,15 @@ button:focus, input:focus, select:focus, textarea:focus{ outline:3px solid rgba(
 .fab-menu a:hover {
     background: #f1f1f1;
 }
+
+/* Animation for hiding/showing the bottom navbar */
+#bottomNav {
+  transition: transform 0.3s ease;
+  /* Initially visible, so transform is none */
+  transform: translateY(0);
+}
+
+/* Hide navbar by sliding it down */
+#bottomNav.hide {
+  transform: translateY(100%);
+}
