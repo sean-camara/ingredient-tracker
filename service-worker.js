@@ -6,8 +6,8 @@ const urlsToCache = [
   './styles.css',
   './script.js',
   './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png',
+  './icons/icon-92.png',
+  './icons/icon-12.png',
 ];
 
 // install -> pre-cache static assets

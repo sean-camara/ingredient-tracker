@@ -337,7 +337,7 @@ function notifyNearExpiration() {
         if (registration) {
           registration.showNotification('Ingredient Expiring Soon!', {
             body: `${ing.name} expires in ${days} day(s) (${ing.expiration}).`,
-            icon: 'icons/icon-192.png',
+            icon: 'icons/icon-92.png',
             tag,
             renotify: true
           });
@@ -385,7 +385,7 @@ window.testNotification = function() {
     navigator.serviceWorker.ready.then(registration => {
       registration.showNotification('Test Notification', {
         body: 'This is a test to confirm notifications work!',
-        icon: './icons/icon-192.png',
+        icon: './icons/icon-92.png',
         vibrate: [100, 50, 100],
         tag: 'test-notification'
       });
