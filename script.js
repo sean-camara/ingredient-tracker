@@ -296,9 +296,47 @@ if('serviceWorker' in navigator){
   });
 }
 
-// initial render — wait for DOM ready
+// Notification permission request
+if ('Notification' in window) {
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(permission => {
+      console.log('Notification permission:', permission);
+    });
+  }
+}
+
+// Notify near expiration ingredients
+function notifyNearExpiration() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') {
+    return; // no permission
+  }
+
+  const now = new Date();
+  const threeDaysLater = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3 days from now
+
+  ingredients.forEach(ing => {
+    if (!ing.expiration) return;
+
+    const expDate = new Date(ing.expiration);
+    if (expDate >= now && expDate <= threeDaysLater) {
+      navigator.serviceWorker.getRegistration().then(registration => {
+        if (registration) {
+          registration.showNotification('Ingredient Expiring Soon!', {
+            body: `${ing.name} (${ing.category}) expires on ${ing.expiration}`,
+            icon: 'icons/icon-192.png',
+            tag: `exp-${ing.name}-${ing.expiration}`,
+            renotify: true
+          });
+        }
+      });
+    }
+  });
+}
+
+// initial render & notify on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
   renderIngredients();
+  notifyNearExpiration();
 });
 
 // Navbar hide/show on scroll
@@ -309,13 +347,10 @@ window.addEventListener('scroll', () => {
   const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
 
   if (currentScroll > lastScrollTop) {
-    // User is scrolling down — hide navbar
     bottomNav.classList.add('hide');
   } else {
-    // User is scrolling up — show navbar
     bottomNav.classList.remove('hide');
   }
 
-  lastScrollTop = currentScroll <= 0 ? 0 : currentScroll; // Reset to 0 if negative scroll
+  lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
 });
-
