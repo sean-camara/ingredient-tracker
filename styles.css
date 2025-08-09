@@ -69,25 +69,36 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
   width:100%;
   max-width:720px;
   align-self:center;
+
+  /* normalized */
+  max-width: 100%;
+  width: 100%;
+  padding: 0 1rem;
+  box-sizing: border-box;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ---------- CARD GRID LAYOUT ---------- */
 /* checkbox | image | content | actions */
-.ingredient-item{
-  display:grid;
-  grid-template-columns:40px 72px 1fr 40px;
-  grid-template-rows:auto auto auto;
-  gap:8px;
-  align-items:center;
-  background:var(--card);
-  border-radius:14px;
-  padding:10px;
-  margin:10px 0;
-  box-shadow:var(--shadow);
-  min-height:78px;
-  overflow-wrap: break-word;
-  word-wrap: break-word;
-  word-break: break-word;
+.ingredient-item {
+  display: grid;
+  /* STRONG FIX: allow 1fr column to shrink by using minmax(0,...) */
+  grid-template-columns: 40px minmax(0,72px) minmax(0,1fr) 40px;
+  grid-template-rows: auto auto auto;
+  gap: 8px;
+  align-items: center;
+  background: var(--card);
+  border-radius: 14px;
+  padding: 10px;
+  margin: 10px 0;
+  box-shadow: var(--shadow);
+
+  /* ensure the card itself fits its container and can shrink */
+  width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden; /* cosmetic safety */
 }
 
 /* checkbox: first column, second row */
@@ -98,20 +109,53 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
 .ingredient-img{ width:64px; height:64px; object-fit:cover; border-radius:12px; border:2px solid rgba(200,170,255,0.6); background:white; }
 
 /* content */
-.title{ grid-column:3; grid-row:1; font-weight:800; font-size:1rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text); }
-.quantity{ grid-column:3; grid-row:2; color:var(--muted); font-size:.95rem; }
+/* Title keeps ellipsis (single-line) */
+.title{
+  grid-column:3;
+  grid-row:1;
+  font-weight:800;
+  font-size:1rem;
+  color:var(--text);
+
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width: 0;
+}
+
+/* Quantity & Notes are allowed to wrap / scroll */
+.quantity{
+  grid-column:3;
+  grid-row:2;
+  color:var(--muted);
+  font-size:.95rem;
+  min-width: 0;
+  white-space: normal;
+}
+
 .notes {
   grid-column: 3;
   grid-row: 3;
   color: #7f6fb2;
   font-size: 0.9rem;
+  min-width: 0;
 
-  white-space: normal !important;
-  word-break: break-word !important;
-  overflow-wrap: break-word !important;
-  hyphens: auto;
-  max-width: 100%;
+  /* improved wrapping for long/no-space strings */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+
+  /* contain size & allow internal scroll */
+  max-height: 5em;
+  overflow-y: auto;
   box-sizing: border-box;
+}
+
+/* ensure text children don't push layout */
+.title, .quantity, .notes {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 /* actions cell */
@@ -122,7 +166,6 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
 /* placeholder thumbnail */
 .thumb-placeholder{ width:64px; height:64px; border-radius:12px; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#fff,#f7ecff); color:#a07ee6; font-weight:900; }
 
-/* empty state */
 .empty-note{ text-align:center; color:var(--muted); padding:18px 12px; }
 
 /* ---------- MODAL ---------- */
@@ -160,6 +203,14 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
 .cancel-btn{ background:var(--accent-2); color:var(--text); border:none; padding:.7rem 1rem; border-radius:12px; font-weight:800; flex:1; min-width:120px; cursor:pointer; }
 .clear-btn{ background:var(--danger); color:#800; border:none; padding:.7rem 1rem; border-radius:12px; font-weight:800; }
 
+/* constrain the textarea inside modal so modal doesn't grow too large */
+#modal textarea {
+  max-height: 18vh;
+  min-height: 4.2rem;
+  resize: vertical;
+  overflow-y: auto;
+}
+
 /* ---------- BOTTOM NAV ---------- */
 #bottomNav{
   position:fixed; bottom:calc(8px + var(--safe-bottom)); left:8px; right:8px; height:var(--nav-height);
@@ -172,7 +223,6 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
 /* focus styles */
 button:focus, input:focus, select:focus, textarea:focus{ outline:3px solid rgba(168,120,255,0.16); outline-offset:2px; border-radius:8px; }
 
-/* responsive tweaks */
 @media(min-width:640px){
   input[type="search"]{ max-width:560px; }
   #ingredientsList{ max-width:640px; }

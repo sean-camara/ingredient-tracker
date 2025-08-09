@@ -252,7 +252,12 @@ modalBg.addEventListener('click', e => { if(e.target === modalBg) closeAdd(); })
 searchInput.addEventListener('input', renderIngredients);
 if(filterBought) filterBought.addEventListener('change', renderIngredients);
 if(filterCategory) filterCategory.addEventListener('change', renderIngredients);
-if(resetFiltersBtn) resetFiltersBtn.addEventListener('click', () => { if(filterBought) filterBought.value='all'; if(filterCategory) filterCategory.value='all'; searchInput.value=''; renderIngredients(); });
+if(resetFiltersBtn) resetFiltersBtn.addEventListener('click', () => {
+  if(filterBought) filterBought.value='all';
+  if(filterCategory) filterCategory.value='all';
+  searchInput.value='';
+  renderIngredients();
+});
 
 // nav interactions
 navFilter.addEventListener('click', () => {
@@ -264,8 +269,22 @@ navFilter.addEventListener('click', () => {
 });
 navSettings.addEventListener('click', () => { settingsModalBg.classList.add('active'); });
 settingsCancelBtn.addEventListener('click', () => { settingsModalBg.classList.remove('active'); });
-clearAllBtn.addEventListener('click', ()=> { if(confirm('Delete ALL ingredients?')){ ingredients = []; saveIngredients(); renderIngredients(); settingsModalBg.classList.remove('active'); }});
-resetFiltersSettingsBtn.addEventListener('click', ()=> { if(filterBought) filterBought.value='all'; if(filterCategory) filterCategory.value='all'; searchInput.value=''; renderIngredients(); alert('Filters reset'); settingsModalBg.classList.remove('active'); });
+clearAllBtn.addEventListener('click', ()=> {
+  if(confirm('Delete ALL ingredients?')){
+    ingredients = [];
+    saveIngredients();
+    renderIngredients();
+    settingsModalBg.classList.remove('active');
+  }
+});
+resetFiltersSettingsBtn.addEventListener('click', ()=> {
+  if(filterBought) filterBought.value='all';
+  if(filterCategory) filterCategory.value='all';
+  searchInput.value='';
+  renderIngredients();
+  alert('Filters reset');
+  settingsModalBg.classList.remove('active');
+});
 
 // close settings by clicking backdrop
 settingsModalBg.addEventListener('click', e => { if(e.target === settingsModalBg) settingsModalBg.classList.remove('active'); });
@@ -277,5 +296,7 @@ if('serviceWorker' in navigator){
   });
 }
 
-// initial
-renderIngredients();
+// initial render — wait for DOM ready
+document.addEventListener('DOMContentLoaded', () => {
+  renderIngredients();
+});
