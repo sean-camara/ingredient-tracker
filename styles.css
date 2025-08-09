@@ -85,6 +85,9 @@ button.reset{ background:var(--btn); border:none; padding:.5rem .8rem; border-ra
   margin:10px 0;
   box-shadow:var(--shadow);
   min-height:78px;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
 }
 
 /* checkbox: first column, second row */
