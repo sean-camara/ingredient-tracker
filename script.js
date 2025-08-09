@@ -101,6 +101,9 @@ function renderIngredients(){
     const li = document.createElement('li');
     li.className = 'ingredient-item';
 
+    // Add class if bought for styling
+    if(ing.bought) li.classList.add('bought');
+
     // checkbox cell
     const checkboxCell = document.createElement('div');
     checkboxCell.className = 'checkbox-cell';
@@ -147,6 +150,13 @@ function renderIngredients(){
     notes.className = 'notes';
     notes.textContent = ing.notes || '';
 
+    // bought label
+    const boughtLabel = document.createElement('div');
+    boughtLabel.className = 'bought-label';
+    if(ing.bought){
+      boughtLabel.textContent = 'Bought ✅';
+    }
+
     // actions
     const actions = document.createElement('div');
     actions.className = 'actions';
@@ -170,6 +180,7 @@ function renderIngredients(){
     li.appendChild(title);
     li.appendChild(quantity);
     li.appendChild(notes);
+    li.appendChild(boughtLabel);
     li.appendChild(actions);
 
     ingredientsList.appendChild(li);

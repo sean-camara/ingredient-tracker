@@ -162,3 +162,25 @@ button:focus, input:focus, select:focus, textarea:focus{ outline:3px solid rgba(
   input[type="search"]{ max-width:560px; }
   #ingredientsList{ max-width:640px; }
 }
+
+.ingredient-card.bought {
+  background-color: #d4edda; /* pale green */
+  color: #155724; /* darker green text */
+  border: 1px solid #c3e6cb;
+}
+
+/* Hide the "Bought" message label */
+.bought-label {
+  display: none !important;
+}
+
+/* Keep green card styling for bought items */
+.ingredient-item.bought {
+  background-color: #d4edda; /* pale green background */
+  color: #155724; /* darker green text */
+  border: 1px solid #c3e6cb;
+}
+
+.bought-checkbox {
+    accent-color: initial !important;
+}
