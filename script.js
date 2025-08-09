@@ -320,21 +320,31 @@ function notifyNearExpiration() {
 
   const warnDays = 3; // notify for items expiring in <= warnDays
 
+  // Load notified tags from localStorage or create empty array
+  let notifiedTags = JSON.parse(localStorage.getItem('notifiedTags') || '[]');
+
   ingredients.forEach(ing => {
     if (!ing.expiration) return;
 
     const days = daysUntil(ing.expiration);
     if (days >= 0 && days <= warnDays) {
+      const tag = `exp-${encodeURIComponent(ing.name)}-${ing.expiration}`;
+
+      // Skip notification if already notified for this tag
+      if (notifiedTags.includes(tag)) return;
+
       navigator.serviceWorker.getRegistration().then(registration => {
         if (registration) {
-          // encode tag to avoid duplicates & invalid chars
-          const tag = `exp-${encodeURIComponent(ing.name)}-${ing.expiration}`;
           registration.showNotification('Ingredient Expiring Soon!', {
             body: `${ing.name} expires in ${days} day(s) (${ing.expiration}).`,
             icon: 'icons/icon-192.png',
             tag,
             renotify: true
           });
+
+          // Add tag to notifiedTags and save to localStorage
+          notifiedTags.push(tag);
+          localStorage.setItem('notifiedTags', JSON.stringify(notifiedTags));
         }
       }).catch(err => {
         console.warn('No SW registration for notification', err);
@@ -342,6 +352,7 @@ function notifyNearExpiration() {
     }
   });
 }
+
 
 // initial render & notify on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
