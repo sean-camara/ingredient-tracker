@@ -1,0 +1,341 @@
+/* =======================
+   styles.css (mobile-first)
+   ======================= */
+
+/* ---- config / tokens ---- */
+:root{
+  --nav-height: 72px;               /* height of bottom nav */
+  --nav-gap: 16px;                  /* extra gap above nav */
+  --bg: #fff7fb;
+  --muted: #7f6fb2;
+  --accent: #b89bff;
+  --accent-2: #ffd6ef;
+  --card: #fff0f8;
+  --btn: #d6b9ff;
+  --btn-hover: #caa2ff;
+  --danger: #ffb3b3;
+  --text: #3c2c56;
+  --shadow: 0 8px 22px rgba(120,86,180,0.12);
+}
+
+/* support safe area for iPhone */
+:root {
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* ---- reset / base ---- */
+* { box-sizing: border-box; }
+html,body { height: 100%; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom)); /* reserve space for nav */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* helper classes */
+.hidden { display: none !important; }
+
+/* ---- search ---- */
+input[type="search"]{
+  width: calc(100% - 2rem);
+  margin: 1rem;
+  padding: .72rem 1rem;
+  border-radius: 22px;
+  border: 1.4px solid rgba(184,155,255,0.6);
+  background: var(--accent-2);
+  font-size: 1.05rem;
+  color: inherit;
+  display: block;
+  outline: none;
+}
+input[type="search"]:focus { box-shadow: 0 6px 18px rgba(184,155,255,0.12); }
+
+/* ---- ingredients list (mobile-first) ---- */
+#ingredientsList {
+  list-style: none;
+  padding: 0 1rem 1rem 1rem;
+  margin: 0;
+  width: 100%;
+  max-width: 720px;
+  align-self: center;
+}
+
+/* card style - stack vertically on phone */
+.ingredient-item{
+  background: var(--card);
+  border-radius: 14px;
+  padding: 12px;
+  margin: 10px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+
+/* on wider screens show row */
+@media (min-width: 520px) {
+  .ingredient-item { flex-direction: row; align-items: center; }
+}
+
+/* left block: checkbox + thumbnail */
+.left-block{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 72px;
+  justify-content: flex-start;
+}
+
+/* checkbox */
+.bought-checkbox{
+  width: 26px;
+  height: 26px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+/* thumbnail */
+.ingredient-img{
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 2px solid rgba(200,170,255,0.6);
+  background: white;
+}
+
+/* content */
+.details{
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.details p { margin: 0; font-weight: 600; color: var(--text); font-size: 1rem; }
+.meta { font-size: .92rem; color: var(--muted); font-weight: 500; }
+.item-notes { font-size: .9rem; color: #7f6fb2; }
+
+/* actions: on mobile aligned below or to the right on wide screens */
+.actions{
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+@media(min-width:520px){
+  .actions { margin-top: 0; }
+}
+
+/* delete icon */
+.delete-btn{
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background .18s ease, transform .12s ease;
+}
+.delete-btn:hover{ background: rgba(196,61,90,0.07); transform: translateY(-2px); }
+
+/* small edit / other icon style (if used) */
+.icon-btn{
+  background: transparent;
+  border: none;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* empty state */
+.empty-note{
+  text-align: center;
+  color: var(--muted);
+  padding: 16px 12px;
+}
+
+/* ---- modal (fixes to avoid overlapping nav) ---- */
+
+/* modal backdrop - use class .modal-bg for both add and settings modals */
+.modal-bg {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px calc(1rem + env(safe-area-inset-left)) calc(calc(var(--nav-height) + var(--nav-gap)) + var(--safe-bottom));
+  background: rgba(86,56,142,0.24);
+  z-index: 999;
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity .28s ease, visibility .28s ease;
+}
+
+/* active state - show backdrop */
+.modal-bg.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* modal box */
+#modal, .modal {
+  width: 100%;
+  max-width: 520px;
+  background: white;
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 12px 30px rgba(120,86,180,0.14);
+  max-height: calc(100vh - (var(--nav-height) + var(--nav-gap) + var(--safe-bottom) + 40px));
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  transform-origin: center bottom;
+}
+
+/* ensure modal has breathing room at bottom so last controls not hidden */
+#modal:after {
+  content: '';
+  display: block;
+  height: 14px;
+}
+
+/* headings */
+#modal h2, .modal h2 {
+  margin: 6px 0 10px;
+  text-align: center;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+/* form controls */
+#modal input[type="text"],
+#modal input[type="date"],
+#modal select,
+#modal textarea,
+#modal input[type="file"]{
+  width: 100%;
+  padding: .6rem .8rem;
+  margin-top: .4rem;
+  border-radius: 12px;
+  border: 1.4px solid rgba(184,155,255,0.6);
+  background: #fff8ff;
+  font-size: 1rem;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+/* file-label styling (styled button for file input) */
+.file-label{
+  display:inline-block;
+  margin-top:.8rem;
+  background: var(--btn);
+  color: var(--text);
+  padding:.5rem .9rem;
+  border-radius:14px;
+  font-weight:800;
+  cursor:pointer;
+  box-shadow: 0 6px 12px rgba(184,155,255,0.12);
+}
+.file-label:hover{ background: var(--btn-hover); }
+
+/* image preview inside modal */
+#imagePreview{
+  width:100%;
+  max-height:160px;
+  object-fit:contain;
+  border-radius:12px;
+  margin-top:8px;
+  display:block;
+}
+
+/* modal buttons - large, touch friendly */
+.modal-buttons{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+.save-btn{
+  background: var(--accent);
+  color: white;
+  border: none;
+  padding: .7rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+.cancel-btn{
+  background: var(--accent-2);
+  color: var(--text);
+  border: none;
+  padding: .7rem 1rem;
+  border-radius: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+/* ---- bottom nav (floating style) ---- */
+#bottomNav{
+  position: fixed;
+  bottom: calc(8px + var(--safe-bottom));
+  left: 8px;
+  right: 8px;
+  height: var(--nav-height);
+  border-radius: 16px;
+  display:flex;
+  justify-content:space-around;
+  align-items:center;
+  background: linear-gradient(180deg, rgba(214,185,255,0.92), rgba(255,214,240,0.96));
+  box-shadow: 0 10px 26px rgba(120,86,180,0.12);
+  z-index: 1000;
+  padding: 8px;
+}
+#bottomNav button{
+  background: none;
+  border: none;
+  color: var(--text);
+  font-weight: 800;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+  cursor: pointer;
+  padding:6px 12px;
+  border-radius: 10px;
+}
+#bottomNav button.active{ color: var(--accent); transform: translateY(-3px); }
+
+/* ---- small responsive tweaks ---- */
+@media(min-width:640px){
+  input[type="search"] { max-width: 560px; }
+  #ingredientsList { max-width: 640px; }
+}
+
+/* ---- accessibility focus styles ---- */
+button:focus, input:focus, select:focus, textarea:focus {
+  outline: 3px solid rgba(168,120,255,0.18);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ---- utility for safe bottom spacing inside modal when keyboard opens ---- */
+.modal-pad {
+  padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 12px);
+}
